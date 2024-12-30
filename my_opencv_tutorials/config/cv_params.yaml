@@ -1,0 +1,12 @@
+img_publisher:
+    ros__parameters:
+        camera_device: 0
+        width: 320
+        height: 240 
+        frame_rate : 30
+
+hsv_converter:
+    ros__parameters:
+        saturation_scale: 1.0
+        value_scale: 1.0
+        
