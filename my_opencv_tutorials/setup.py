@@ -26,6 +26,8 @@ setup(
         'console_scripts': [
             'img_pub = my_opencv_tutorials.img_pub:main',
             'convert_hsv = my_opencv_tutorials.convert_hsv:main',
+            'edge_detect = my_opencv_tutorials.edge_detect:main',
+            'cartoon = my_opencv_tutorials.cartoon:main',
         ],
     },
 )

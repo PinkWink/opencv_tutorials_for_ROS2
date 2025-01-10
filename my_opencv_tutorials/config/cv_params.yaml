@@ -10,3 +10,12 @@ hsv_converter:
         saturation_scale: 1.0
         value_scale: 1.0
         
+cartoon_styler:
+    ros__parameters:
+        sigma_color: 20
+        sigma_space: 9
+
+edge_detect:
+    ros__parameters:
+        threshold1: 100
+        threshold2: 200
