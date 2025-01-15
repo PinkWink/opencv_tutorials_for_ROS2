@@ -28,6 +28,7 @@ setup(
             'convert_hsv = my_opencv_tutorials.convert_hsv:main',
             'edge_detect = my_opencv_tutorials.edge_detect:main',
             'cartoon = my_opencv_tutorials.cartoon:main',
+            'optical_flow = my_opencv_tutorials.optical_flow:main',
         ],
     },
 )
