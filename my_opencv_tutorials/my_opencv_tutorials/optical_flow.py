@@ -22,14 +22,6 @@ class OpticalFlowPublisher(Node):
         )
 
         # Publishers
-        # 1) Optical flow in PointCloud2 format
-        self.flow_publisher = self.create_publisher(
-            PointCloud2,
-            '/optical_flow',
-            10
-        )
-
-        # 2) Optical flow vectors over the original image
         self.image_optical_vector_publisher = self.create_publisher(
             Image,
             '/image_optical_vector',
@@ -67,11 +59,7 @@ class OpticalFlowPublisher(Node):
             0                    # flags
         )
 
-        # 2. Publish PointCloud2 (optical flow)
-        cloud_msg = self.flow_to_pointcloud2(flow, msg.header.stamp)
-        self.flow_publisher.publish(cloud_msg)
-
-        # 3. Publish original image with optical flow vectors (arrows)
+        # Publish original image with optical flow vectors (arrows)
         flow_vec_img = current_frame.copy()
         self.draw_flow_vectors(flow_vec_img, flow, step=16)
         flow_vec_msg = self.bridge.cv2_to_imgmsg(flow_vec_img, encoding='bgr8')
@@ -80,79 +68,6 @@ class OpticalFlowPublisher(Node):
 
         # Update prev_gray for next call
         self.prev_gray = current_gray
-
-    def flow_to_pointcloud2(self, flow, stamp):
-        """
-        flow.shape = (height, width, 2)
-          flow[..., 0] = x방향 흐름(Δx)
-          flow[..., 1] = y방향 흐름(Δy)
-
-        PointCloud2로 변환 시,
-          각 픽셀 (u, v)에 대해
-            x = flow[v, u, 0]
-            y = flow[v, u, 1]
-            z = 0
-        로 저장해봅니다.
-        """
-
-        height, width, _ = flow.shape
-
-        # PointCloud2 메시지 생성
-        cloud_msg = PointCloud2()
-        cloud_msg.header.stamp = stamp
-        cloud_msg.header.frame_id = "camera_optical_frame"  # 상황에 맞게 frame_id 지정
-        cloud_msg.height = height
-        cloud_msg.width = width
-
-        # Fields 정의 (x, y, z => float32)
-        cloud_msg.fields = [
-            PointField(name='x', offset=0,  datatype=PointField.FLOAT32, count=1),
-            PointField(name='y', offset=4,  datatype=PointField.FLOAT32, count=1),
-            PointField(name='z', offset=8,  datatype=PointField.FLOAT32, count=1),
-        ]
-        cloud_msg.is_bigendian = False
-        cloud_msg.point_step = 12  # float32 x 3 = 12 bytes
-        cloud_msg.row_step = cloud_msg.point_step * width
-        cloud_msg.is_dense = True  # 유효하지 않은 데이터가 없다고 가정
-
-        # data 채우기
-        data = []
-        for v in range(height):
-            for u in range(width):
-                fx = flow[v, u, 0]
-                fy = flow[v, u, 1]
-                # z는 0으로
-                point_bytes = struct.pack('fff', fx, fy, 0.0)
-                data.append(point_bytes)
-
-        cloud_msg.data = b''.join(data)
-        return cloud_msg
-
-    def flow_to_color_image(self, flow):
-        """
-        Optical Flow를 시각적으로 표현하기 위해:
-          - 흐름의 각 화소에 대해 magnitude(세기), angle(방향)을 구함
-          - angle을 색상(Hue)으로, magnitude를 명도(Value)로 매핑
-          - 결과를 HSV->BGR로 변환
-        """
-        h, w, _ = flow.shape
-
-        # x, y 흐름 -> magnitude, angle
-        magnitude, angle = cv2.cartToPolar(flow[..., 0], flow[..., 1], angleInDegrees=True)
-
-        # HSV 컬러맵 생성
-        hsv = np.zeros((h, w, 3), dtype=np.uint8)
-
-        # Hue: 0~180 범위이므로 angle/2
-        hsv[..., 0] = (angle / 2).astype(np.uint8)
-        # Saturation = 최대
-        hsv[..., 1] = 255
-        # Value = 흐름 세기를 0~255 범위로 정규화
-        hsv[..., 2] = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-
-        # HSV -> BGR
-        flow_bgr = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-        return flow_bgr
 
     def draw_flow_vectors(self, frame, flow, step=16):
         """
@@ -177,7 +92,6 @@ class OpticalFlowPublisher(Node):
                     thickness=1,
                     tipLength=0.4
                 )
-
 
 def main():
     rclpy.init()
