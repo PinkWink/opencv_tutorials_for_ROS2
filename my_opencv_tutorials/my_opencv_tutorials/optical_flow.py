@@ -1,12 +1,8 @@
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image, PointCloud2, PointField
+from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import cv2
-import numpy as np
-import struct
-from builtin_interfaces.msg import Time
-
 
 class OpticalFlowPublisher(Node):
     def __init__(self):
@@ -15,27 +11,18 @@ class OpticalFlowPublisher(Node):
 
         # Subscriber
         self.subscription = self.create_subscription(
-            Image,
-            '/image_raw',
-            self.image_callback,
-            10
+            Image, '/image_raw', self.image_callback, 10
         )
 
         # Publishers
         self.image_optical_vector_publisher = self.create_publisher(
-            Image,
-            '/image_optical_vector',
-            10
+            Image, '/image_optical_vector', 10
         )
 
-        # CV Bridge
         self.bridge = CvBridge()
-
-        # To hold the previous frame (grayscale)
         self.prev_gray = None
 
     def image_callback(self, msg):
-        """Receives image frames from /image_raw, computes optical flow, and publishes."""
         # Convert ROS Image to OpenCV image (BGR)
         current_frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         current_gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
@@ -70,10 +57,6 @@ class OpticalFlowPublisher(Node):
         self.prev_gray = current_gray
 
     def draw_flow_vectors(self, frame, flow, step=16):
-        """
-        주어진 프레임 위에 Optical Flow 벡터(화살표)를 일정 간격(step)으로 그립니다.
-        flow.shape = (height, width, 2)
-        """
         h, w = flow.shape[:2]
 
         for y in range(0, h, step):
@@ -85,12 +68,7 @@ class OpticalFlowPublisher(Node):
 
                 # 화살표 그리기
                 cv2.arrowedLine(
-                    frame,
-                    (x, y),
-                    (end_x, end_y),
-                    color=(0, 255, 0),
-                    thickness=1,
-                    tipLength=0.4
+                    frame, (x, y), (end_x, end_y), color=(0, 255, 0), thickness=1, tipLength=0.4
                 )
 
 def main():
